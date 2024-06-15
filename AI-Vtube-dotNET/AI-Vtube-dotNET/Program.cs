@@ -46,14 +46,5 @@ internal class Program
             // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
             LogManager.Shutdown();
         }
-
-
-        //ServiceCollection services = CreateServiceProvider();
-
-        //ServiceProvider provider = services.BuildServiceProvider();
-
-        //Runtime runner = ActivatorUtilities.CreateInstance<Runtime>(provider);
-
-        //runner.RunAsync();
     }
 }
