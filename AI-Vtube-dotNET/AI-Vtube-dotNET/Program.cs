@@ -1,11 +1,8 @@
 ﻿using AI_Vtube_dotNET.Core;
-using Microsoft.Extensions.Hosting;
 using NLog.Extensions.Logging;
 using Microsoft.Extensions.Logging;
 using NLog;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Text;
 
 namespace AI_Vtube_dotNET;
 internal class Program
