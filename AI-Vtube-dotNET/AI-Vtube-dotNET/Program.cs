@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace AI_Vtube_dotNET;
 internal class Program
 {
-    private static void Main(string[] args)
+    private static async Task Main(string[] args)
     {
         var logger = LogManager.GetCurrentClassLogger();
         try
@@ -30,7 +30,7 @@ internal class Program
 
             //Startup the runtime
             var runner = servicesProvider.GetRequiredService<Runtime>();
-            runner.RunAsync();
+            await runner.RunAsync();
 
             //TODO: Remove when we have a runtime loop
             Console.WriteLine("Press ANY key to exit");

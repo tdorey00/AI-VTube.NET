@@ -13,6 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
     <PackageReference Include="NLog" Version="5.3.2" />
     <PackageReference Include="NLog.Extensions.Logging" Version="5.3.11" />
+    <PackageReference Include="OpenAI" Version="2.0.0-beta.3" />
   </ItemGroup>
 
   <ItemGroup>
