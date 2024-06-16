@@ -3,6 +3,7 @@ using NLog.Extensions.Logging;
 using Microsoft.Extensions.Logging;
 using NLog;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 
 namespace AI_Vtube_dotNET;
 internal class Program
@@ -12,14 +13,14 @@ internal class Program
         var logger = LogManager.GetCurrentClassLogger();
         try
         {
-            //TODO: For later when we want config settings
-            //var config = new ConfigurationBuilder()
-            //   .SetBasePath(System.IO.Directory.GetCurrentDirectory()) //From NuGet Package Microsoft.Extensions.Configuration.Json
-            //   .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-            //.Build();
+            var config = new ConfigurationBuilder()
+               .SetBasePath(Directory.GetCurrentDirectory())
+               .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
 
             using var servicesProvider = new ServiceCollection()
-                .AddSingleton<Runtime>() // Runner is the custom class
+                .AddSingleton<Runtime>()
+                .AddScoped<IConfiguration>(_ => config) // WHAT???
                 .AddLogging(loggingBuilder =>
                 {
                     // configure Logging with NLog
