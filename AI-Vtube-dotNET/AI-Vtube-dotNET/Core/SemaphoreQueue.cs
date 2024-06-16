@@ -61,16 +61,5 @@ namespace AI_Vtube_dotNET.Core
         {
             _semaphore.Release();
         }
-
-        public void SetNewCount(int count)
-        {
-            _semaphore.Wait();
-            SemaphoreSlim newSemaphore = new(count);
-            newSemaphore.Wait();
-            SemaphoreSlim oldSemaphore = _semaphore;
-            _semaphore = newSemaphore;
-            oldSemaphore.Release();
-            _semaphore.Release();
-        }
     }
 }
