@@ -5,7 +5,7 @@ namespace AI_Vtube_dotNET.Core
     /// <summary>
     /// A Thread Safe FIFO Semaphore
     /// </summary>
-    internal class SemaphoreQueue
+    internal sealed class SemaphoreQueue
     {
         private SemaphoreSlim _semaphore;
         private ConcurrentQueue<TaskCompletionSource<bool>> _queue = new();

@@ -4,14 +4,16 @@ using OpenAI.Chat;
 
 namespace AI_Vtube_dotNET.Core;
 
-public class Runtime
+internal sealed class Runtime
 {
-    private readonly ILogger _logger;
+    private readonly ILogger<Runtime> _logger;
     private readonly IConfiguration _configuration;
-    public Runtime(ILogger<Runtime> logger, IConfiguration config) 
+    private readonly LiveClientManager _liveClientManager;
+    public Runtime(ILogger<Runtime> logger, IConfiguration config, LiveClientManager liveClientManager) 
     { 
         _logger = logger;
         _configuration = config;
+        _liveClientManager = liveClientManager;
     }
 
     public async Task RunAsync()

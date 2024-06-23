@@ -1,12 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using AI_Vtube_dotNET.Livestream;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
-namespace AI_Vtube_dotNET.Core
+namespace AI_Vtube_dotNET.Core;
+
+internal sealed class LiveClientManager
 {
-    internal class LiveClientManager
+    private readonly ILogger<LiveClientManager> _logger;
+    private readonly IConfiguration _configuration;
+    private readonly ILivestreamPlatform _livestreamPlatform;
+
+    public LiveClientManager(ILogger<LiveClientManager> logger, IConfiguration configuration, ILivestreamPlatform livestreamPlatform)
     {
+        _logger = logger;
+        _configuration = configuration;
+        _livestreamPlatform = livestreamPlatform;
     }
 }
