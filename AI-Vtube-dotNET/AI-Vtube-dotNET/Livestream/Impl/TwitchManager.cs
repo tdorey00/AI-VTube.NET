@@ -15,7 +15,7 @@ internal sealed class TwitchManager : ILivestreamPlatform
     {
         ClientOptions clientOptions = new ClientOptions
         {
-            MessagesAllowedInPeriod = 750,
+            MessagesAllowedInPeriod = 750, // TODO: See what this actually does, see how we can turn these knobs
             ThrottlingPeriod = TimeSpan.FromSeconds(30)
         };
 
@@ -41,5 +41,9 @@ internal sealed class TwitchManager : ILivestreamPlatform
     private void Client_OnMessageReceived(object? sender, OnMessageReceivedArgs e)
     {
         // PROCESS MESSAGES HERE
+        // We consume messages here, assuming we get MessagesAllowedInPeriod messages every ThrottlingPeriod seconds.
+
+        // Should have "processing queue(s)" separate from consumption that has a much stricter limitation on the number
+        // number of messages received.
     }
 }
