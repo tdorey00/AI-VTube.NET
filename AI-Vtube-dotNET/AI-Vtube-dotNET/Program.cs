@@ -5,6 +5,7 @@ using NLog;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using AI_Vtube_dotNET.Livestream;
+using AI_Vtube_dotNET.Livestream.Impl;
 
 namespace AI_Vtube_dotNET;
 internal sealed class Program
@@ -22,7 +23,7 @@ internal sealed class Program
             using var servicesProvider = new ServiceCollection()
                 .AddSingleton<Runtime>()
                 .AddScoped<LiveClientManager>()
-                .AddScoped<ILivestreamPlatform>()
+                .AddScoped<ILivestreamPlatform, TwitchManager>()
                 .AddScoped<IConfiguration>(_ => config) // WHAT???
                 .AddLogging(loggingBuilder =>
                 {
