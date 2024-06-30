@@ -19,7 +19,8 @@ internal sealed class Runtime
 
     public async Task RunAsync()
     {
-        await SimpleChatAsync();
+        _liveClientManager.Init();
+        //await SimpleChatAsync();
     }
 
     public async Task SimpleChatAsync()

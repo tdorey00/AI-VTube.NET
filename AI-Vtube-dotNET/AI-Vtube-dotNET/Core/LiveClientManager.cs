@@ -16,4 +16,10 @@ internal sealed class LiveClientManager
         _configuration = configuration;
         _livestreamPlatform = livestreamPlatform;
     }
+
+    public void Init()
+    {
+        _livestreamPlatform.InitClient();
+        _livestreamPlatform.RunClient();
+    }
 }
