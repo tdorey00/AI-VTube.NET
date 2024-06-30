@@ -77,8 +77,9 @@ internal class BatchQueue<T>
     /// Add a value to the <see cref="BatchQueue{T}"/>
     /// </summary>
     /// <param name="value">The value to add to the <see cref="BatchQueue{T}"/></param>
+    /// <param name="advanceIfFull">Optional, if true when the Queue is full when Add is called, it will dequeue the first item and put the new item on</param>
     /// <returns>True if added, false if the queue has reached the max size</returns>
-    public bool Add(T value)
+    public bool Add(T value, bool advanceIfFull = false)
     {
         if (_queue.Count != _maxSize)
         {
@@ -87,7 +88,16 @@ internal class BatchQueue<T>
         }
         else
         {
-            return false;
+            if (advanceIfFull)
+            {
+                _queue.TryDequeue(out _);
+                _queue.Enqueue(value);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 

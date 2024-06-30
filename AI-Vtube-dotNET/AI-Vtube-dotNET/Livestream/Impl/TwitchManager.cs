@@ -1,4 +1,5 @@
 ﻿using AI_Vtube_dotNET.Core;
+using AI_Vtube_dotNET.Core.Queues;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using TwitchLib.Client;
@@ -18,6 +19,7 @@ internal sealed class TwitchManager : ILivestreamPlatform
     private readonly TwitchClient _client;
     private readonly ILogger<TwitchManager> _logger;
     private readonly IConfiguration _configuration;
+    private readonly BatchQueue<string> _messageQueue;
     private const int MAX_CONNECTION_ATTEMPTS = 5;
 
     private int connectionAttempts = 0;
@@ -26,6 +28,8 @@ internal sealed class TwitchManager : ILivestreamPlatform
     {
         _logger = logger;
         _configuration = configuration;
+
+        _messageQueue = new BatchQueue<string>(10, 100);
 
         ClientOptions clientOptions = new ClientOptions
         {
@@ -37,9 +41,7 @@ internal sealed class TwitchManager : ILivestreamPlatform
         _client = new TwitchClient(customClient);
     }
 
-    /// <summary>
-    /// Initialize the Twitch Client and Register Events
-    /// </summary>
+    /// <inheritdoc cref="ILivestreamPlatform.InitClient"/>
     /// <exception cref="InvalidDataException">Thrown when bad data is found in configuration</exception>
     public void InitClient()
     {
@@ -60,12 +62,16 @@ internal sealed class TwitchManager : ILivestreamPlatform
         //TODO: Consider if OnDisconnected is needed for some kind of state management (If disconnected maybe we need to expose some kind of state value for the LiveClientManager to be able to reference).
     }
 
-    /// <summary>
-    /// Starts the Twitch Client
-    /// </summary>
+    /// <inheritdoc cref="ILivestreamPlatform.RunClient"/>
     public void RunClient()
     {
         _client.Connect();
+    }
+
+    ///<inheritdoc cref="ILivestreamPlatform.GetChatMessages"/>
+    public List<string> GetChatMessages()
+    {
+        return _messageQueue.GetNextBatch();
     }
 
 #region EVENTS
@@ -105,6 +111,8 @@ internal sealed class TwitchManager : ILivestreamPlatform
 
         //TODO: Do something with the batch queue here, the twitch manager should maintain a batch queue of messages which the LiveClientManager can read from when it needs to
         _logger.LogInformation(e.ChatMessage.Message.ToString());
+
+        _messageQueue.Add(e.ChatMessage.Message, true);
 
         // Should have "processing queue(s)" separate from consumption that has a much stricter limitation on the number
         // number of messages received.
