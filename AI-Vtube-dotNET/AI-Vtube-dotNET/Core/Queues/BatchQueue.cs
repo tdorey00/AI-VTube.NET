@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.ComponentModel;
 
 namespace AI_Vtube_dotNET.Core.Queues;
 
@@ -7,6 +8,8 @@ namespace AI_Vtube_dotNET.Core.Queues;
 /// </summary>
 internal class BatchQueue<T>
 {
+    private const int DEFAULT_MAX_SIZE = 100;
+
     /// <summary>
     /// How many items will be returned each time the queue is read
     /// </summary>
@@ -23,17 +26,17 @@ internal class BatchQueue<T>
     private ConcurrentQueue<T> _queue = new();
 
     /// <summary>
-    /// Initialize a <see cref="BatchQueue"/> with a given batch size, max size of the queue defaults to 100
+    /// Initialize a <see cref="BatchQueue{T}"/> with a given batch size, max size of the queue defaults to 100
     /// </summary>
     /// <param name="batchSize">The batch size of the queue when items are read</param>
     public BatchQueue(int batchSize)
     {
         _batchSize = batchSize;
-        _maxSize = 100;
+        _maxSize = DEFAULT_MAX_SIZE;
     }
 
     /// <summary>
-    /// Initialize a <see cref="BatchQueue"/> with a given batch size, and a max size for the queue
+    /// Initialize a <see cref="BatchQueue{T}"/> with a given batch size, and a max size for the queue
     /// </summary>
     /// <param name="batchSize">The batch size of queue when items are read</param>
     /// <param name="maxSize">The maxmimum possible size of the queue</param>

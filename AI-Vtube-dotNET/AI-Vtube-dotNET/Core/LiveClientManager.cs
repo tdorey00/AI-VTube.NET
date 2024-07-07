@@ -1,4 +1,5 @@
 ﻿using AI_Vtube_dotNET.Livestream;
+using AI_Vtube_dotNET.Livestream.Impl;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -19,7 +20,18 @@ internal sealed class LiveClientManager
 
     public void Init()
     {
-        _livestreamPlatform.InitClient();
-        _livestreamPlatform.RunClient();
+        //TODO WHEN TWITCH AUTH WORKS, UNCOMMENT AND REMOVE PLAT GARBAGE
+        var plat = _livestreamPlatform as TwitchManager;
+        plat.SetupConnectionCredentials();
+        //_livestreamPlatform.InitClient();
+        //_livestreamPlatform.RunClient();
+
+        //while (true)
+        //{
+        //    Thread.Sleep(10000);
+        //    var messages = _livestreamPlatform.GetChatMessages();
+        //    _logger.LogInformation("Got {cnt} chat messages!", messages.Count);
+        //    messages.ForEach(message => _logger.LogInformation("UserName: {user} Message: {message}", message.UserName, message.Message));
+        //}
     }
 }
