@@ -3,13 +3,12 @@ using AI_Vtube_dotNET.Livestream.Models;
 using AI_Vtube_dotNET.Livestream.Twitch;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.Net;
-using TwitchLib.Api;
-using TwitchLib.Api.Core.Enums;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
+using TwitchLib.Client.Exceptions;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
+using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Models;
 using static AI_Vtube_dotNET.Livestream.ILivestreamPlatform;
 
@@ -28,6 +27,7 @@ internal sealed class TwitchManager : ILivestreamPlatform
 
     private int connectionAttempts = 0;
     private ConnectionState connectionState;
+    private string refreshToken = string.Empty;
 
     public TwitchManager(ILogger<TwitchManager> logger, IConfiguration configuration) 
     {
@@ -59,14 +59,14 @@ internal sealed class TwitchManager : ILivestreamPlatform
             throw new InvalidDataException("Unable to find Twitch Channel name in configuration");
         }
 
-        // TODO: Request OAuth token from twitch automagically
-        //ConnectionCredentials credentials = SetupConnectionCredentials();
-        //_client.Initialize(credentials, channelName);
+        _client.Initialize(SetupConnectionCredentials(channelName), channelName, '!', '!', false);
 
         // Bind client events
         _client.OnMessageReceived += Client_OnMessageReceived;
         _client.OnConnected += Client_OnConnected;
-        _client.OnConnectionError += _client_OnConnectionError;
+        _client.OnConnectionError += Client_OnConnectionError;
+        _client.OnError += Client_OnError;
+        _client.OnIncorrectLogin += Client_OnIncorrectLogin;
         //TODO: Consider if OnDisconnected is needed for some kind of state management (If disconnected maybe we need to expose some kind of state value for the LiveClientManager to be able to reference).
     }
 
@@ -78,7 +78,7 @@ internal sealed class TwitchManager : ILivestreamPlatform
     }
 
     //TODO: WHEN TWITCH AUTH WORKS, MAKE THIS PRIVATE.
-    public ConnectionCredentials SetupConnectionCredentials()
+    private ConnectionCredentials SetupConnectionCredentials(string channelName)
     {
         IConfigurationSection twitchOAuth = _configuration.GetRequiredSection("Twitch_OAuth");
         string? redirectURL = twitchOAuth.GetValue<string>("Redirect_URL");
@@ -87,6 +87,7 @@ internal sealed class TwitchManager : ILivestreamPlatform
             connectionState = ConnectionState.Failed;
             throw new InvalidDataException("Unable to find Twitch Redirect URL in configuration");
         }
+
         string? clientId = twitchOAuth.GetValue<string>("Client_ID");
         if (clientId == null)
         {
@@ -94,10 +95,23 @@ internal sealed class TwitchManager : ILivestreamPlatform
             throw new InvalidDataException("Unable to find Twitch Client ID in configuration");
         }
 
-        TwitchAuth auth = new(clientId, redirectURL);
-        auth.GetAuthorizationCreds();
+        string? clientSecret = twitchOAuth.GetValue<string>("Client_Secret");
+        if (clientSecret == null)
+        {
+            connectionState = ConnectionState.Failed;
+            throw new InvalidDataException("Unable to find Twitch Client Secret in configuration");
+        }
+
+        TwitchAuth auth = new(redirectURL, clientId, clientSecret);
+        string? authToken = auth.GetAuthorizationToken();
+
+        if (authToken == null)
+        {
+            _logger.LogCritical("Unable to get authorization token, cannot connect to twitch.");
+            throw new BadStateException("Unable to get authorization token.");
+        }
         
-        return new ConnectionCredentials("epics_123", "REPLACE ME LATER");
+        return new ConnectionCredentials(channelName, authToken);
     }
 
     ///<inheritdoc cref="ILivestreamPlatform.GetChatMessages"/>
@@ -134,7 +148,7 @@ internal sealed class TwitchManager : ILivestreamPlatform
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e">Connection Error Info</param>
-    private async void _client_OnConnectionError(object? sender, OnConnectionErrorArgs e)
+    private async void Client_OnConnectionError(object? sender, OnConnectionErrorArgs e)
     {
         _logger.LogError("Twitch Connection Failed: {Message}", e.Error.Message);
         //In the event of failure, we have some retry logic
@@ -164,6 +178,16 @@ internal sealed class TwitchManager : ILivestreamPlatform
 
         // Should have "processing queue(s)" separate from consumption that has a much stricter limitation on the number
         // number of messages received.
+    }
+
+    private void Client_OnError(object? sender, OnErrorEventArgs e)
+    {
+        throw e.Exception;
+    }
+
+    private void Client_OnIncorrectLogin(object? sender, OnIncorrectLoginArgs e)
+    {
+        throw e.Exception;
     }
 
     #endregion EVENTS
