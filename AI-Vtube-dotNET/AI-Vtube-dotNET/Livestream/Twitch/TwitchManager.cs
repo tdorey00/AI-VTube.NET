@@ -173,7 +173,6 @@ internal sealed class TwitchManager : ILivestreamPlatform
         // PROCESS MESSAGES HERE
         // We consume messages here, assuming we get MessagesAllowedInPeriod messages every ThrottlingPeriod seconds.
 
-        //TODO: Do something with the batch queue here, the twitch manager should maintain a batch queue of messages which the LiveClientManager can read from when it needs to
         _logger.LogInformation(e.ChatMessage.Message.ToString());
 
         _messageQueue.Add(new LiveStreamMessage(e.ChatMessage.Username, e.ChatMessage.Message), true);
