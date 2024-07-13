@@ -44,7 +44,7 @@ internal sealed class Program
         catch (Exception ex)
         {
             // NLog: catch any exception and log it.
-            logger.Error(ex, "Runtime exited with an exception.");
+            logger.Fatal(ex, "Runtime exited with an exception: {ex}", ex.Message);
         }
         finally
         {

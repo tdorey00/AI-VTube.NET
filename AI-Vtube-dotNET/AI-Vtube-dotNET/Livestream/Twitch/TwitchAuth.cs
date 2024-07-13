@@ -45,6 +45,8 @@ internal sealed class TwitchAuth
         {
             throw new BadStateException("No Twitch OAuth Code Found.");
         }
+
+        //TODO: Once token works make this better.
         //OpenUrl(GetAuthTokenUrl());
         //return task.GetAwaiter().GetResult();
         return twitchAPI.Auth.GetAccessTokenFromCodeAsync(code, ClientSecret, RedirectUrl).GetAwaiter().GetResult().AccessToken;

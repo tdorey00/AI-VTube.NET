@@ -59,7 +59,7 @@ internal sealed class TwitchManager : ILivestreamPlatform
             throw new InvalidDataException("Unable to find Twitch Channel name in configuration");
         }
 
-        _client.Initialize(SetupConnectionCredentials(channelName), channelName, '!', '!', false);
+        _client.Initialize(SetupConnectionCredentials(channelName), channelName);
 
         // Bind client events
         _client.OnMessageReceived += Client_OnMessageReceived;
@@ -67,6 +67,7 @@ internal sealed class TwitchManager : ILivestreamPlatform
         _client.OnConnectionError += Client_OnConnectionError;
         _client.OnError += Client_OnError;
         _client.OnIncorrectLogin += Client_OnIncorrectLogin;
+        _client.OnLog += Client_OnLog;
         //TODO: Consider if OnDisconnected is needed for some kind of state management (If disconnected maybe we need to expose some kind of state value for the LiveClientManager to be able to reference).
     }
 
@@ -77,7 +78,7 @@ internal sealed class TwitchManager : ILivestreamPlatform
         _client.Connect();
     }
 
-    //TODO: WHEN TWITCH AUTH WORKS, MAKE THIS PRIVATE.
+    //TODO: WHEN TWITCH AUTH WORKS, MAKE THIS PRIVATE. Also make this better.
     private ConnectionCredentials SetupConnectionCredentials(string channelName)
     {
         IConfigurationSection twitchOAuth = _configuration.GetRequiredSection("Twitch_OAuth");
@@ -156,6 +157,7 @@ internal sealed class TwitchManager : ILivestreamPlatform
         {
             connectionState = ConnectionState.Reconnecting;
             await Task.Delay(connectionAttempts * 100);
+            //TODO: Consider refreshing and reinitializing the client on connection error
             RunClient(); //Retry Connection
             connectionAttempts++;
         }
@@ -180,13 +182,35 @@ internal sealed class TwitchManager : ILivestreamPlatform
         // number of messages received.
     }
 
+    /// <summary>
+    /// Logs anything we get from TwitchLib
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e">Log Info</param>
+    private void Client_OnLog(object? sender, OnLogArgs e)
+    {
+        //TODO: Consider making this debug only with preprocessor directives or something.
+        _logger.LogInformation("TWITCHLIB: {log}", e.Data);
+    }
+
+    /// <summary>
+    /// Throws on Client error
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e">Error Event</param>
     private void Client_OnError(object? sender, OnErrorEventArgs e)
     {
         throw e.Exception;
     }
 
+    /// <summary>
+    /// Throwns on a bad login
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e">Incorrect Login Info</param>
     private void Client_OnIncorrectLogin(object? sender, OnIncorrectLoginArgs e)
     {
+        //Not much else we can do here honestly
         throw e.Exception;
     }
 
