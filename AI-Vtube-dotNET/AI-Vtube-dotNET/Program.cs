@@ -4,9 +4,11 @@ using Microsoft.Extensions.Logging;
 using NLog;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using AI_Vtube_dotNET.Livestream;
+using AI_Vtube_dotNET.Livestream.Impl;
 
 namespace AI_Vtube_dotNET;
-internal class Program
+internal sealed class Program
 {
     private static async Task Main(string[] args)
     {
@@ -20,6 +22,8 @@ internal class Program
 
             using var servicesProvider = new ServiceCollection()
                 .AddSingleton<Runtime>()
+                .AddScoped<LiveClientManager>()
+                .AddScoped<ILivestreamPlatform, TwitchManager>()
                 .AddScoped<IConfiguration>(_ => config) // WHAT???
                 .AddLogging(loggingBuilder =>
                 {
@@ -40,7 +44,7 @@ internal class Program
         catch (Exception ex)
         {
             // NLog: catch any exception and log it.
-            logger.Error(ex, "Runtime exited with an exception.");
+            logger.Fatal(ex, "Runtime exited with an exception: {ex}", ex.Message);
         }
         finally
         {

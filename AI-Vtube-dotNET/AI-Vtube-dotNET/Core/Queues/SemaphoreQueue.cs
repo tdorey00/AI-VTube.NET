@@ -1,11 +1,11 @@
 ﻿using System.Collections.Concurrent;
 
-namespace AI_Vtube_dotNET.Core
+namespace AI_Vtube_dotNET.Core.Queues
 {
     /// <summary>
     /// A Thread Safe FIFO Semaphore
     /// </summary>
-    internal class SemaphoreQueue
+    internal sealed class SemaphoreQueue
     {
         private SemaphoreSlim _semaphore;
         private ConcurrentQueue<TaskCompletionSource<bool>> _queue = new();
@@ -48,7 +48,7 @@ namespace AI_Vtube_dotNET.Core
             _semaphore.WaitAsync().ContinueWith(t =>
             {
                 TaskCompletionSource<bool> popped;
-                if (_queue.TryDequeue(out popped))
+                if (_queue.TryDequeue(out popped!))
                     popped.SetResult(true);
             });
             return tcs.Task;
