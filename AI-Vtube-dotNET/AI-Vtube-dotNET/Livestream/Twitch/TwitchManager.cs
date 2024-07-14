@@ -19,21 +19,23 @@ namespace AI_Vtube_dotNET.Livestream.Impl;
 /// </summary>
 internal sealed class TwitchManager : ILivestreamPlatform
 {
+    private const int MAX_CONNECTION_ATTEMPTS = 5;
+    private const int QUEUE_BATCH_SIZE = 10;
+    private const int QUEUE_MAX_SIZE = 100;
+
     private readonly TwitchClient _client;
     private readonly ILogger<TwitchManager> _logger;
     private readonly IConfiguration _configuration;
     private readonly BatchQueue<LiveStreamMessage> _messageQueue;
-    private const int MAX_CONNECTION_ATTEMPTS = 5;
 
     private int connectionAttempts = 0;
     private ConnectionState connectionState;
-    private string refreshToken = string.Empty;
 
     public TwitchManager(ILogger<TwitchManager> logger, IConfiguration configuration) 
     {
         _logger = logger;
         _configuration = configuration;
-        _messageQueue = new BatchQueue<LiveStreamMessage>(10, 100);
+        _messageQueue = new BatchQueue<LiveStreamMessage>(QUEUE_BATCH_SIZE, QUEUE_MAX_SIZE);
         
         ClientOptions clientOptions = new ClientOptions
         {
@@ -61,14 +63,7 @@ internal sealed class TwitchManager : ILivestreamPlatform
 
         _client.Initialize(SetupConnectionCredentials(channelName), channelName);
 
-        // Bind client events
-        _client.OnMessageReceived += Client_OnMessageReceived;
-        _client.OnConnected += Client_OnConnected;
-        _client.OnConnectionError += Client_OnConnectionError;
-        _client.OnError += Client_OnError;
-        _client.OnIncorrectLogin += Client_OnIncorrectLogin;
-        _client.OnLog += Client_OnLog;
-        //TODO: Consider if OnDisconnected is needed for some kind of state management (If disconnected maybe we need to expose some kind of state value for the LiveClientManager to be able to reference).
+        BindClientEvents();
     }
 
     /// <inheritdoc cref="ILivestreamPlatform.RunClient"/>
@@ -78,7 +73,29 @@ internal sealed class TwitchManager : ILivestreamPlatform
         _client.Connect();
     }
 
-    //TODO: WHEN TWITCH AUTH WORKS, MAKE THIS PRIVATE. Also make this better.
+    ///<inheritdoc cref="ILivestreamPlatform.GetChatMessages"/>
+    public List<LiveStreamMessage> GetChatMessages()
+    {
+        return _messageQueue.GetNextBatch();
+    }
+
+    ///<inheritdoc cref="ILivestreamPlatform.GetConnectionState"/>
+    public ConnectionState GetConnectionState()
+    {
+        return connectionState;
+    }
+
+    #endregion ILiveStreamPlatform Implementations
+
+    #region private members
+
+    /// <summary>
+    /// Generated the connection credentials for the <see cref="TwitchClient"/> using <see cref="TwitchAuth"/>
+    /// </summary>
+    /// <param name="channelName">The Twitch channel being connected</param>
+    /// <returns></returns>
+    /// <exception cref="InvalidDataException">Thrown if data is missing from configuration</exception>
+    /// <exception cref="BadStateException">Thrown if there is an issue with the token</exception>
     private ConnectionCredentials SetupConnectionCredentials(string channelName)
     {
         IConfigurationSection twitchOAuth = _configuration.GetRequiredSection("Twitch_OAuth");
@@ -104,30 +121,36 @@ internal sealed class TwitchManager : ILivestreamPlatform
         }
 
         TwitchAuth auth = new(redirectURL, clientId, clientSecret);
-        string? authToken = auth.GetAuthorizationToken();
+        AuthToken? authToken = auth.GetAuthorizationToken();
 
-        if (authToken == null)
+        if (authToken.token == null)
         {
             _logger.LogCritical("Unable to get authorization token, cannot connect to twitch.");
             throw new BadStateException("Unable to get authorization token.");
         }
-        
-        return new ConnectionCredentials(channelName, authToken);
+
+        //TODO: Might not need channel name here, thats probably the bot username. 
+        return new ConnectionCredentials(channelName, authToken.token);
     }
 
-    ///<inheritdoc cref="ILivestreamPlatform.GetChatMessages"/>
-    public List<LiveStreamMessage> GetChatMessages()
+    /// <summary>
+    /// Binds events to the <see cref="TwitchClient"/>
+    /// </summary>
+    private void BindClientEvents()
     {
-        return _messageQueue.GetNextBatch();
+        _client.OnMessageReceived += Client_OnMessageReceived;
+        _client.OnConnected += Client_OnConnected;
+        _client.OnConnectionError += Client_OnConnectionError;
+        _client.OnError += Client_OnError;
+        _client.OnIncorrectLogin += Client_OnIncorrectLogin;
+        #if DEBUG
+        //Debug only for this, it kind of spams the console
+        _client.OnLog += Client_OnLog;
+        #endif
+        //TODO: Consider if OnDisconnected is needed for some kind of state management (We have connection state exposed so we might want to use that in this case).
     }
 
-    ///<inheritdoc cref="ILivestreamPlatform.GetConnectionState"/>
-    public ConnectionState GetConnectionState()
-    {
-        return connectionState;
-    }
-
-    #endregion ILiveStreamPlatform Implementations
+    #endregion private members
 
     #region EVENTS
     //TODO: In the event of an error that causes us to disconnect from twitch (Look through available events, we need to refresh the auth token using: https://github.com/TwitchLib/TwitchLib.Api/blob/816b6d46af4edb89f9f1f54d3344cd752a8f043f/TwitchLib.Api/Auth/Auth.cs#L25
@@ -182,14 +205,13 @@ internal sealed class TwitchManager : ILivestreamPlatform
     }
 
     /// <summary>
-    /// Logs anything we get from TwitchLib
+    /// Logs anything we get from TwitchLib, only registered with a debug build
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e">Log Info</param>
     private void Client_OnLog(object? sender, OnLogArgs e)
     {
-        //TODO: Consider making this debug only with preprocessor directives or something.
-        _logger.LogInformation("TWITCHLIB: {log}", e.Data);
+        _logger.LogInformation("TWITCHLIB DEBUG: {log}", e.Data);
     }
 
     /// <summary>

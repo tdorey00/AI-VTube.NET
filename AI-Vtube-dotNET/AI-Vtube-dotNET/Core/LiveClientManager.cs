@@ -1,10 +1,12 @@
 ﻿using AI_Vtube_dotNET.Livestream;
-using AI_Vtube_dotNET.Livestream.Impl;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace AI_Vtube_dotNET.Core;
-
+//TODO: Refactor this later when we're in a more mature state
+/// <summary>
+/// Manager for <see cref="ILivestreamPlatform"/> to interact with the runtime
+/// </summary>
 internal sealed class LiveClientManager
 {
     private readonly ILogger<LiveClientManager> _logger;

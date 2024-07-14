@@ -1,7 +1,7 @@
-﻿using System.Diagnostics;
+﻿using AI_Vtube_dotNET.Livestream.Models;
+using System.Diagnostics;
 using System.Net;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using TwitchLib.Api;
 using TwitchLib.Api.Core.Enums;
 using TwitchLib.Client.Exceptions;
@@ -9,6 +9,9 @@ using TwitchLib.Client.Exceptions;
 
 namespace AI_Vtube_dotNET.Livestream.Twitch;
 
+/// <summary>
+/// A Class for handling the twitch OAuth Implicit grant flow using a <see cref="HttpListener"/> to recieve the Auth Code from the redirect URL
+/// </summary>
 internal sealed class TwitchAuth
 {
     private string RedirectUrl;
@@ -17,9 +20,15 @@ internal sealed class TwitchAuth
     private List<AuthScopes> scopes;
     private HttpListener listener;
     private readonly string ClientSecret;
+
+    /// <summary>
+    /// Instantiates the <see cref="TwitchAuth"/> class
+    /// </summary>
+    /// <param name="redirectUrl">The redirect URL for the Authorization Code</param>
+    /// <param name="clientID">The client ID of the twitch app</param>
+    /// <param name="clientSecret">The client secret of the twitch app</param>
     public TwitchAuth(string redirectUrl, string clientID, string clientSecret)
     {
-
         twitchAPI = new TwitchAPI();
         twitchAPI.Settings.ClientId = clientID;
 
@@ -27,14 +36,22 @@ internal sealed class TwitchAuth
         ClientSecret = clientSecret;
         State = Guid.NewGuid().ToString();
 
-        //TODO: Investigate what scopes we actually need.
-        scopes = [AuthScopes.Any];
+        scopes = 
+            [
+            AuthScopes.Chat_Read,
+            AuthScopes.Chat_Edit
+            ];
 
         listener = new HttpListener();
         listener.Prefixes.Add(RedirectUrl);
     }
 
-    public string GetAuthorizationToken()
+    /// <summary>
+    /// Generates a Twitch API Token using the Implicit Grant Flow
+    /// </summary>
+    /// <returns>A <see cref="AuthToken"/> record containing the token information</returns>
+    /// <exception cref="BadStateException">Thrown if the auth code used to generate a token is invalid</exception>
+    public AuthToken GetAuthorizationToken()
     {
         string authUrl = twitchAPI.Auth.GetAuthorizationCodeUrl(RedirectUrl, scopes, false, State);
         Task<string?> task = Task.Run(Listen);
@@ -46,12 +63,15 @@ internal sealed class TwitchAuth
             throw new BadStateException("No Twitch OAuth Code Found.");
         }
 
-        //TODO: Once token works make this better.
-        //OpenUrl(GetAuthTokenUrl());
-        //return task.GetAwaiter().GetResult();
-        return twitchAPI.Auth.GetAccessTokenFromCodeAsync(code, ClientSecret, RedirectUrl).GetAwaiter().GetResult().AccessToken;
+        var authResponse = twitchAPI.Auth.GetAccessTokenFromCodeAsync(code, ClientSecret, RedirectUrl).GetAwaiter().GetResult();
+
+        return new AuthToken(authResponse.AccessToken, authResponse.RefreshToken);
     }
 
+    /// <summary>
+    /// Starts the <see cref="HttpListener"/> and then begins the wait for the request
+    /// </summary>
+    /// <returns>The auth code if request was sucessful, false otherwise</returns>
     private async Task<string?> Listen()
     {
         listener.Start();
@@ -60,6 +80,10 @@ internal sealed class TwitchAuth
         return result;
     }
 
+    /// <summary>
+    /// Waits for a request on the Redirect URL using the <see cref="HttpListener"/> then parses that checking the OAuth State and then for the Auth Code
+    /// </summary>
+    /// <returns>The auth code if present and the state is valid, null otherwise</returns>
     private async Task<string?> onRequest()
     {
         while (listener.IsListening)
@@ -104,24 +128,10 @@ internal sealed class TwitchAuth
         return null;
     }
 
-    //private string GetAuthTokenUrl()
-    //{
-    //    string scopesStr = null;
-    //    foreach (var scope in scopes)
-    //        if (scopesStr == null)
-    //            scopesStr = TwitchLib.Api.Core.Common.Helpers.AuthScopesToString(scope);
-    //        else
-    //            scopesStr += $"+{TwitchLib.Api.Core.Common.Helpers.AuthScopesToString(scope)}";
-
-    //    return "https://id.twitch.tv/oauth2/authorize?" +
-    //            $"client_id={ClientID}&" +
-    //            $"redirect_uri={System.Web.HttpUtility.UrlEncode(RedirectUrl)}&" +
-    //            "response_type=token&" +
-    //            $"scope={scopesStr}&" +
-    //            $"state={State}&" +
-    //            $"force_verify=false";
-    //}
-
+    /// <summary>
+    /// Opens URL based on OS
+    /// </summary>
+    /// <param name="url">The Url to be opened</param>
     private void OpenUrl(string url)
     {
         try
