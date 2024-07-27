@@ -12,12 +12,12 @@ using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Models;
 using static AI_Vtube_dotNET.Livestream.ILivestreamPlatform;
 
-namespace AI_Vtube_dotNET.Livestream.Impl;
+namespace AI_Vtube_dotNET.Livestream.Twitch;
 
 /// <summary>
 /// A Manager for <see cref="TwitchClient"/> used to interact with the Twitch API
 /// </summary>
-internal sealed class TwitchManager : ILivestreamPlatform
+public sealed class TwitchManager : ILivestreamPlatform
 {
     private const int MAX_CONNECTION_ATTEMPTS = 5;
     private const int QUEUE_BATCH_SIZE = 10;
@@ -234,7 +234,6 @@ internal sealed class TwitchManager : ILivestreamPlatform
         //Not much else we can do here honestly
         throw e.Exception;
     }
-
     #endregion EVENTS
 
 }

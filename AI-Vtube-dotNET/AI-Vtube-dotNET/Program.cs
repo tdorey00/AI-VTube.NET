@@ -5,7 +5,9 @@ using NLog;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using AI_Vtube_dotNET.Livestream;
-using AI_Vtube_dotNET.Livestream.Impl;
+using AI_Vtube_dotNET.Livestream.Twitch;
+using AI_Vtube_dotNET.LLM;
+using AI_Vtube_dotNET.LLM.OpenAI;
 
 namespace AI_Vtube_dotNET;
 internal sealed class Program
@@ -24,12 +26,17 @@ internal sealed class Program
                 .AddSingleton<Runtime>()
                 .AddScoped<LiveClientManager>()
                 .AddScoped<ILivestreamPlatform, TwitchManager>()
+                .AddScoped<ILLMBase, OpenAIManager>()
                 .AddScoped<IConfiguration>(_ => config) // WHAT???
                 .AddLogging(loggingBuilder =>
                 {
                     // configure Logging with NLog
                     loggingBuilder.ClearProviders();
+#if DEBUG
                     loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Debug);
+#else
+                    loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
+#endif
                     loggingBuilder.AddNLog();
                 }).BuildServiceProvider();
 

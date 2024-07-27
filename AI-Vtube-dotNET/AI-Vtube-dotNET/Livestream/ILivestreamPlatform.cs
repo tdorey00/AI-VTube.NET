@@ -5,7 +5,7 @@ namespace AI_Vtube_dotNET.Livestream;
 /// <summary>
 /// An interface for defining common functionality of different Live stream platforms
 /// </summary>
-internal interface ILivestreamPlatform
+public interface ILivestreamPlatform
 {
     /// <summary>
     /// Initialize the client and preform any necessary setup
